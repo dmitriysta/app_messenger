@@ -2,11 +2,17 @@ package controllers
 
 import (
 	"encoding/json"
-	entities "internal/entities"
 	repository "internal/repository"
 	"net/http"
 	"strconv"
 )
+
+type GetUserResponce struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
 type UserController struct {
 	userRepo repository.User
@@ -34,7 +40,7 @@ func (c *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user entities.User
+	var user GetUserResponce
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -51,7 +57,7 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	var user entities.User
+	var user GetUserResponce
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
