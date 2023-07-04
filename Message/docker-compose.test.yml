@@ -1,13 +1,14 @@
 services:
 
+  #Message service
   app:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    working_dir: /var/app/users
+    working_dir: /var/app/message
 
-
+  #Nginx Service
   nginx:
     image: nginx
     container_name: 'nginx-server'
@@ -19,31 +20,26 @@ services:
       - "443:443"
     restart: unless-stopped
 
-
+  #PostgreSQL Service
   user_db:
     image: postgres
     container_name: 'Postgre-server'
-    volumes: 
+    volumes:
       - user_db:/var/lib/postgresql/data/
     ports:
-        - "5432:5432"
+      - "5432:5432"
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=testdb
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=testpassword
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-
-
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #Redis Service
+  redis:
+    image: redis
+    container_name: 'redis-server'
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - /opt/docker/redis/etc:/usr/local/etc/redis

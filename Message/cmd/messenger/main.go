@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -39,6 +40,55 @@ func dbConnection() *sql.DB {
 	return db
 }
 
+func createKafkaProducer() *kafka.Writer {
+	config := kafka.WriterConfig{
+		Brokers: []string{"localhost:9092"},
+		Topic:   "messages",
+	}
+
+	producer := kafka.NewWriter(config)
+
+	return producer
+}
+
+func notifier() {
+	config := kafka.ReaderConfig{
+		Brokers:  []string{"localhost:9092"},
+		Topic:    "messages",
+		GroupID:  "notifier-group",
+		MinBytes: 10e3,
+		MaxBytes: 10e6,
+	}
+
+	reader := kafka.NewReader(config)
+	defer reader.Close()
+
+	for {
+		m, err := reader.ReadMessage()
+		if err != nil {
+			log.Printf("failed to read message: %v", err)
+			continue
+		}
+
+		fmt.Printf("Received message: %s\n", m.Value)
+
+	}
+
+	handleNotificationMessage(m.Value)
+
+}
+
+func handleNotificationMessage(message []byte) {
+	var notification GetMessageResponce
+	err := json.Unmarshal(message, &notification)
+	if err != nil {
+		log.Printf("failed to unmarshal message: %v", err)
+		return
+	}
+
+	log.Printf("Received notification: %+v", notification)
+}
+
 func main() {
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -54,6 +104,14 @@ func main() {
 	defer redisClient.Close()
 
 	dbConnection()
+
+	producer := createKafkaProducer()
+	if err != nil {
+		log.Fatalf("failed to create Kafka producer: %v", err)
+	}
+	defer producer.Close()
+
+	go notifier()
 
 	r := mux.NewRouter()
 
